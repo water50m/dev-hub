@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 DEV HUB: Central Project Manager
 
-## Getting Started
+**"The Ultimate Workspace for Makers & Programmers"**
 
-First, run the development server:
+Central Hub สำหรับจัดการโปรเจกต์ (AI, Web, DIY, Server) ที่ออกแบบมาเพื่อ Developer โดยเฉพาะ เน้นความคล่องตัว ดีไซน์ที่สนุก (Neon/Cyberpunk) และการใช้งานที่ลื่นไหล (Seamless UX)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🎯 Core Concept (คอนเซปต์หลัก)
+
+* **Centralization:** รวบรวมทุกโปรเจกต์และไอเดียที่กระจัดกระจายให้อยู่ในที่เดียว
+* **Structure:** แบ่งโครงสร้างเป็น `Project` -> `Tasks` (Checklist) + `Documentation` (Notes)
+* **Identity:** ดีไซน์สะท้อนตัวตน Programmer/Maker ด้วยธีม Neon และ High Contrast
+* **Portability:** ข้อมูลทั้งหมดเก็บเป็น JSON ไฟล์เดียว ย้ายไปรันบน Home Server หรือเครื่องอื่นได้ทันทีโดยไม่ต้อง Setup Database
+
+## ✨ Key Features (ฟีเจอร์เด่น)
+
+### 1. Project Management
+* **CRUD Operations:** สร้าง, อ่าน, แก้ไข, และลบโปรเจกต์ได้อย่างรวดเร็ว
+* **Click-to-Edit Title:** คลิกที่ชื่อโปรเจกต์เพื่อแก้ไขชื่อได้ทันที (Seamless UI)
+* **Set Default:** ปักหมุดโปรเจกต์ที่ทำบ่อยให้เปิดขึ้นมาเป็นหน้าแรกเสมอ
+* **Soft Delete & Restore:** ระบบถังขยะที่ให้โอกาสกู้คืนโปรเจกต์ที่เผลอลบ หรือลบถาวรเมื่อมั่นใจแล้ว
+
+### 2. Task Management (Checklist)
+* **Inline Editing:** แก้ไขข้อความใน Task ได้ทันทีโดยไม่ต้องกดปุ่ม Edit
+* **Custom High Contrast Strikethrough:** ระบบขีดฆ่าแบบพิเศษ (ใช้ CSS Gradient) ที่เส้นอยู่กึ่งกลางตัวอักษรไทยเป๊ะๆ และตัวหนังสือยังอ่านออกชัดเจน (ไม่จางหาย) เพื่อ Review สิ่งที่ทำไปแล้วได้ง่าย
+
+### 3. Documentation
+* **Quick Notes:** พื้นที่ Textarea สำหรับจดไอเดีย โค้ด หรือ Log การทำงาน แยกตามโปรเจกต์
+* **Auto-Save:** บันทึกข้อมูลอัตโนมัติลง Local JSON ทุกครั้งที่มีการแก้ไข
+
+### 4. Theme System (4 Personalities)
+เปลี่ยนอารมณ์การทำงานได้ทันทีด้วย 4 ธีมหลัก:
+* ⚡ **Electric Pink:** ขาว-ชมพู นีออน (Fun & Energetic) *-- Default*
+* 🌃 **Cyberpunk Night:** ดำ-ฟ้า-เหลือง (Hacker/SysAdmin style)
+* 🌲 **Deep Forest:** ขาว-เขียว (Zen & Focus)
+* 🔮 **Midnight Purple:** ม่วงเข้ม (Luxury & Mysterious)
+
+### 5. Data Persistence
+* **JSON File System:** ข้อมูลทั้งหมดถูกเก็บไว้ที่ `data/projects.json`
+* **Easy Backup:** เพียงแค่ Copy ไฟล์ JSON หรือทั้งโฟลเดอร์ ก็เท่ากับ Backup ข้อมูลทั้งหมดแล้ว
+
+---
+
+## 🛠 Tech Stack
+
+* **Framework:** Next.js 14 (App Router)
+* **Language:** TypeScript
+* **Styling:** Tailwind CSS (Custom Variables for Themes)
+* **Icons:** Lucide React
+* **Font:** Kanit (Google Fonts) - รองรับภาษาไทยสมบูรณ์แบบ
+* **Database:** Local JSON File (Node.js FS API)
+
+---
+
+## 📦 Installation & Usage
+
+1. **Clone & Install**
+    npm install
+
+2. **Run Development Server**
+    npm run dev
+
+3. **Deploy to Home Server Build โปรเจกต์และ Start production mode:**
+    npm run build
+    npm start
+
+📂 Project Structure
+
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+my-hub/
+├── app/
+│   ├── api/projects/    # Backend Logic (Read/Write JSON)
+│   ├── page.tsx         # Main UI & Frontend Logic
+│   └── globals.css      # Theme Configurations
+├── data/
+│   └── projects.json    # Database File
+└── lib/
+    └── types.ts         # TypeScript Interfaces
+```
