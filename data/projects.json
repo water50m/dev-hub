@@ -11,42 +11,59 @@
   {
     "id": "6319a697-d5d4-40c8-af35-e2e4b68564a8",
     "name": "ReschDB",
-    "description": "",
+    "description": "- การตัดเงินรอบ 2 ปีใช้การ view เฉพาะเงินที่มีอายุไม่เกิน 2 ปี",
     "tasks": [
       {
         "id": "53cf3cd3-7852-48f7-b352-45ffecc3e30b",
         "text": "ระบบแสดงข้อมูลรายปี",
-        "isCompleted": false
+        "isCompleted": true,
+        "subtasks": [
+          {
+            "id": "6d4f1eee-8f42-43bc-ba35-a5c01fe65a0b",
+            "text": "ใช้การค้นหาเฉพาะปีงบประมาณแทน",
+            "isCompleted": false,
+            "subtasks": [],
+            "isExpanded": true
+          }
+        ],
+        "isExpanded": true
       },
       {
         "id": "e6752c1d-f82f-43ab-8f4a-3ac860449320",
         "text": "log ตอน delete รายการและการกู้คืน",
-        "isCompleted": false
+        "isCompleted": false,
+        "subtasks": [],
+        "isExpanded": true
       },
       {
         "id": "85fcb84b-5a7d-45e8-b109-68609ded19c5",
         "text": "แยก dashboard table backend เป็น func แยก ",
-        "isCompleted": false
+        "isCompleted": false,
+        "subtasks": []
       },
       {
         "id": "7e86400a-7f67-40b1-bae9-44dd75f0e66e",
         "text": "นำ table มาใช้ในหน้า profile ด้วย",
-        "isCompleted": false
+        "isCompleted": false,
+        "subtasks": []
       },
       {
         "id": "59800f31-e0d8-487b-8636-9832ff73718c",
         "text": "ช่องแสดงจำนวนเงินรวม",
-        "isCompleted": false
+        "isCompleted": false,
+        "subtasks": []
       },
       {
         "id": "cffcd043-4c53-4298-b2f1-cb50e4443a7e",
         "text": "popup สรุป action ที่จะลอยขึ้นมาหลังจาก action และจะหายไปหลังกด x",
-        "isCompleted": false
+        "isCompleted": false,
+        "subtasks": []
       },
       {
         "id": "6c212306-6a5c-41d7-ad68-0f1a7220fdfe",
         "text": "ตาราง approve ให้เพิ่ม col status หมดอายุแล้ว และ ใช้แล้ว",
-        "isCompleted": false
+        "isCompleted": false,
+        "subtasks": []
       }
     ],
     "isDefault": true,

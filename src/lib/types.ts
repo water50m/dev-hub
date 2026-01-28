@@ -3,6 +3,8 @@ export interface Task {
   id: string;
   text: string;
   isCompleted: boolean;
+  subtasks: Task[];   
+  isExpanded?: boolean;
 }
 
 export interface Project {

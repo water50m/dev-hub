@@ -1,144 +1,62 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { 
-  Plus, Trash2, RotateCcw, Save, CheckSquare, 
-  Square, Layout, Moon, Zap, TreePine, Crown, 
-  Settings, X, Pencil
+  Plus, Trash2, RotateCcw, Layout, Moon, Zap, 
+  TreePine, Crown, Settings, X, Pencil 
 } from "lucide-react";
-import { Project, Task, Theme } from "@/lib/types";
-
-// --- Components (Inline for simplicity, can handle split files) ---
+import { Theme } from "@/lib/types";
+import { useProjects } from "@/hooks/useProjects"; // เรียกใช้ Hook ที่เราทำไว้
+import TaskItem from "@/components/TaskItem";      // เรียกใช้ Component ที่เราแยกไว้
 
 export default function Home() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  // 1. เรียกใช้ Logic ทั้งหมดจาก Hook (บรรทัดเดียวจบ)
+  const { 
+    projects, isLoading, addProject, updateProject, 
+    deleteProject, restoreProject, setDefault, projectTaskAction 
+  } = useProjects();
+  
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [theme, setTheme] = useState<Theme>('electric'); // Default เป็น Electric Pink
-  const [isLoading, setIsLoading] = useState(true);
+  const [theme, setTheme] = useState<Theme>('electric');
   const [showTrash, setShowTrash] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
-  // Load Data
+  // Auto-select Project เมื่อโหลดเสร็จ
   useEffect(() => {
-    fetch('/api/projects')
-      .then(res => res.json())
-      .then((data: Project[]) => {
-        setProjects(data);
-        const defaultProject = data.find(p => p.isDefault && !p.isDeleted);
-        if (defaultProject) setCurrentProjectId(defaultProject.id);
-        else if (data.length > 0 && !data[0].isDeleted) setCurrentProjectId(data[0].id);
-        setIsLoading(false);
-      });
-    
-    // Load Theme from local storage
+    if (!isLoading && !currentProjectId) {
+      const def = projects.find(p => p.isDefault && !p.isDeleted);
+      if (def) setCurrentProjectId(def.id);
+      else if (projects.length > 0 && !projects[0].isDeleted) setCurrentProjectId(projects[0].id);
+    }
+  }, [isLoading, projects, currentProjectId]);
+
+  // Load & Save Theme
+  useEffect(() => {
     const savedTheme = localStorage.getItem('hub-theme') as Theme;
     if (savedTheme) setTheme(savedTheme);
   }, []);
 
-  // Save Data
-  const saveData = async (updatedProjects: Project[]) => {
-    setProjects(updatedProjects);
-    await fetch('/api/projects', {
-      method: 'POST',
-      body: JSON.stringify(updatedProjects),
-    });
-  };
-
-  // Theme Handling
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('hub-theme', theme);
   }, [theme]);
 
-  // --- Actions ---
-  const createProject = () => {
+  // Handle Actions
+  const handleCreateProject = () => {
     const name = prompt("ตั้งชื่อโปรเจกต์ใหม่:");
-    if (!name) return;
-    
-    const newProject: Project = {
-      id: crypto.randomUUID(),
-      name,
-      description: "",
-      tasks: [],
-      isDefault: false,
-      isDeleted: false,
-      createdAt: new Date().toISOString()
-    };
-    
-    const updated = [...projects, newProject];
-    saveData(updated);
-    setCurrentProjectId(newProject.id);
-  };
-
-  const deleteProject = (id: string, permanent: boolean = false) => {
-    let updated;
-    if (permanent) {
-      if(!confirm("ยืนยันการลบถาวร?")) return;
-      updated = projects.filter(p => p.id !== id);
-    } else {
-      updated = projects.map(p => p.id === id ? { ...p, isDeleted: true } : p);
-      if (currentProjectId === id) setCurrentProjectId(null);
+    if (name) {
+      const newId = addProject(name);
+      setCurrentProjectId(newId);
     }
-    saveData(updated);
   };
 
-  const restoreProject = (id: string) => {
-    const updated = projects.map(p => p.id === id ? { ...p, isDeleted: false } : p);
-    saveData(updated);
-  };
-
-  const setDefaultProject = (id: string) => {
-    const updated = projects.map(p => ({
-      ...p,
-      isDefault: p.id === id
-    }));
-    saveData(updated);
-  };
-
-  // --- Task & Note Logic ---
   const currentProject = projects.find(p => p.id === currentProjectId);
-
-  const updateCurrentProject = (updates: Partial<Project>) => {
-    if (!currentProjectId) return;
-    const updated = projects.map(p => 
-      p.id === currentProjectId ? { ...p, ...updates } : p
-    );
-    saveData(updated);
-  };
-
-  const toggleTask = (taskId: string) => {
-    if (!currentProject) return;
-    const newTasks = currentProject.tasks.map(t => 
-      t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t
-    );
-    updateCurrentProject({ tasks: newTasks });
-  };
-
-  const addTask = (text: string) => {
-    if (!currentProject || !text.trim()) return;
-    const newTask: Task = { id: crypto.randomUUID(), text, isCompleted: false };
-    updateCurrentProject({ tasks: [...currentProject.tasks, newTask] });
-  };
-
-  const updateTaskText = (taskId: string, newText: string) => {
-    if (!currentProject) return;
-    const newTasks = currentProject.tasks.map(t => 
-      t.id === taskId ? { ...t, text: newText } : t
-    );
-    updateCurrentProject({ tasks: newTasks });
-  };
-  
-  const deleteTask = (taskId: string) => {
-    if (!currentProject) return;
-    const newTasks = currentProject.tasks.filter(t => t.id !== taskId);
-    updateCurrentProject({ tasks: newTasks });
-  };
 
   if (isLoading) return <div className="h-screen flex items-center justify-center">Loading Hub...</div>;
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* --- Sidebar --- */}
+      {/* ---------------- Sidebar (เมนูซ้าย) กลับมาแล้วครับ ---------------- */}
       <aside className="w-64 flex flex-col border-r p-4 transition-colors" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-secondary)' }}>
         <div className="mb-6">
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -151,7 +69,7 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto space-y-2">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-semibold opacity-70">PROJECTS</span>
-            <button onClick={createProject} className="p-1 rounded hover:bg-black/10 transition">
+            <button onClick={handleCreateProject} className="p-1 rounded hover:bg-black/10 transition">
               <Plus size={18} />
             </button>
           </div>
@@ -164,7 +82,6 @@ export default function Home() {
               style={{ 
                 backgroundColor: currentProjectId === p.id ? 'var(--bg-primary)' : 'transparent',
                 borderColor: 'var(--accent)',
-                boxShadow: currentProjectId === p.id ? '0 2px 5px rgba(0,0,0,0.05)' : 'none'
               }}
             >
               <div className="flex items-center gap-2 truncate">
@@ -174,7 +91,7 @@ export default function Home() {
               <div className="hidden group-hover:flex gap-1">
                  <button 
                   title="Set Default"
-                  onClick={(e) => { e.stopPropagation(); setDefaultProject(p.id); }}
+                  onClick={(e) => { e.stopPropagation(); setDefault(p.id); }}
                   className="p-1 hover:text-yellow-500"
                 >
                   <Crown size={12} />
@@ -209,14 +126,15 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* --- Main Content --- */}
+      {/* ---------------- Main Content ---------------- */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         {showTrash ? (
           // Trash View
           <div className="p-8 flex-1 overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-red-500">
-              <Trash2 /> ถังขยะ (Deleted Projects)
-            </h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold flex items-center gap-2 text-red-500"><Trash2 /> ถังขยะ (Deleted Projects)</h2>
+                <button onClick={() => setShowTrash(false)} className="p-2 hover:bg-black/5 rounded"><X size={24} /></button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {projects.filter(p => p.isDeleted).map(p => (
                 <div key={p.id} className="border p-4 rounded-lg flex flex-col gap-4" style={{ borderColor: 'var(--border)' }}>
@@ -233,35 +151,29 @@ export default function Home() {
               ))}
               {projects.filter(p => p.isDeleted).length === 0 && <p className="opacity-50">ถังขยะว่างเปล่า</p>}
             </div>
-            <button onClick={() => setShowTrash(false)} className="absolute top-4 right-4 p-2 rounded hover:bg-black/5">
-              <X size={24} />
-            </button>
           </div>
         ) : currentProject ? (
           // Project View
           <div className="flex-1 flex flex-col md:flex-row h-full">
              {/* Left: Tasks */}
             <div className="flex-1 p-6 md:p-10 overflow-y-auto border-b md:border-b-0 md:border-r" style={{ borderColor: 'var(--border)' }}>
+              
+              {/* Header (Click to Edit) */}
               <div className="mb-8 group">
                 {isEditingTitle ? (
-                  /* โหมดแก้ไข: เป็น Input ใหญ่ๆ */
                   <input
                     autoFocus
                     type="text"
                     value={currentProject.name}
-                    onChange={(e) => updateCurrentProject({ name: e.target.value })}
-                    onBlur={() => setIsEditingTitle(false)} // คลิกที่อื่นเพื่อบันทึก
+                    onChange={(e) => updateProject(currentProject.id, { name: e.target.value })}
+                    onBlur={() => setIsEditingTitle(false)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') setIsEditingTitle(false); // กด Enter เพื่อบันทึก
+                      if (e.key === 'Enter') setIsEditingTitle(false);
                     }}
                     className="text-4xl font-bold bg-transparent border-b-2 focus:outline-none w-full pb-2 mb-2"
-                    style={{ 
-                      color: 'var(--accent)', 
-                      borderColor: 'var(--accent)' 
-                    }}
+                    style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
                   />
                 ) : (
-                  /* โหมดแสดงผลปกติ: กดที่ชื่อ หรือ ไอคอนดินสอ เพื่อแก้ไข */
                   <h2 
                     onClick={() => setIsEditingTitle(true)}
                     className="text-4xl font-bold mb-2 cursor-pointer flex items-center gap-3 select-none" 
@@ -269,7 +181,6 @@ export default function Home() {
                     title="คลิกเพื่อแก้ไขชื่อ"
                   >
                     {currentProject.name}
-                    {/* ไอคอนดินสอ จะโผล่มาเมื่อเอาเมาส์ชี้ (Hover) */}
                     <Pencil 
                       size={28} 
                       className="opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity" 
@@ -277,66 +188,36 @@ export default function Home() {
                     />
                   </h2>
                 )}
-
                 <div className="flex items-center gap-2 text-sm opacity-60">
-                    <span>Tasks: {currentProject.tasks.filter(t => t.isCompleted).length}/{currentProject.tasks.length}</span>
-                    {currentProject.isDefault && <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-bold">DEFAULT</span>}
+                   {currentProject.isDefault && <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-bold">DEFAULT</span>}
                 </div>
               </div>
 
-              <div className="space-y-3">
+              {/* Task List (ใช้ Component ใหม่) */}
+              <div className="space-y-1">
                 {currentProject.tasks.map(task => (
-                  <div key={task.id} className="flex items-start gap-3 group">
-                    <button 
-                      onClick={() => toggleTask(task.id)}
-                      className={`mt-1 transition-colors ${task.isCompleted ? 'text-green-500' : 'opacity-40 hover:opacity-100'}`}
-                    >
-                      {task.isCompleted ? <CheckSquare size={22} /> : <Square size={22} />}
-                    </button>
-                    
-                    {/* Inline Edit Input */}
-                    <input 
-                      type="text" 
-                      value={task.text}
-                      onChange={(e) => updateTaskText(task.id, e.target.value)}
-                      className={`w-full bg-transparent border-none focus:ring-0 p-0 text-lg transition-all
-                        /* 1. ลบ class 'line-through' ออกไปเลยครับ เราไม่ใช้แล้ว */
-                        ${task.isCompleted ? 'opacity-100 font-semibold' : ''} 
-                      `}
-                      style={{ 
-                        color: task.isCompleted ? 'var(--text-secondary)' : 'var(--text-primary)',
-                        
-                        // --- 2. เพิ่มชุดคำสั่งสร้างเส้นขีดฆ่าแบบกำหนดเอง ---
-                        backgroundImage: task.isCompleted ? 'linear-gradient(currentColor, currentColor)' : 'none',
-                        backgroundSize: '100% 2px',      // ความหนาของเส้น (แก้เป็น 1.5px หรือ 3px ได้ตามชอบ)
-                        backgroundRepeat: 'no-repeat',
-                        
-                        // *** 3. ปรับความสูงเส้นตรงนี้ครับ ***
-                        // 0% = บนสุด, 50% = ตรงกลางเป๊ะ, 100% = ล่างสุด
-                        // สำหรับฟอนต์ Kanit/ภาษาไทย แนะนำช่วง 45% - 48% จะดูเข้า "เอว" ตัวหนังสือพอดีครับ
-                        backgroundPosition: '0 55%' 
-                      }}
-                    />
-
-                    <button 
-                      onClick={() => deleteTask(task.id)}
-                      className="opacity-0 group-hover:opacity-100 text-red-400 p-1 hover:bg-red-50 rounded"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
+                  <TaskItem 
+                    key={task.id} 
+                    task={task}
+                    // ส่ง Actions เข้าไปผ่าน Hook Wrapper
+                    onToggle={(id) => projectTaskAction(currentProject.id, 'toggle', { id })}
+                    onUpdateText={(id, text) => projectTaskAction(currentProject.id, 'text', { id, text })}
+                    onDelete={(id) => projectTaskAction(currentProject.id, 'delete', { id })}
+                    onAddSubtask={(id) => projectTaskAction(currentProject.id, 'addSub', { id })}
+                    onToggleExpand={(id) => projectTaskAction(currentProject.id, 'expand', { id })}
+                  />
                 ))}
 
                 {/* New Task Input */}
-                <div className="flex items-center gap-3 mt-6 opacity-60 hover:opacity-100 transition-opacity">
-                  <Plus size={22} />
+                <div className="flex items-center gap-3 mt-6 opacity-60 hover:opacity-100 transition-opacity pl-1">
+                  <Plus size={20} />
                   <input 
                     type="text" 
-                    placeholder="เพิ่มรายการใหม่..." 
-                    className="bg-transparent border-none focus:ring-0 p-0 text-lg w-full placeholder:text-current opacity-70"
+                    placeholder="เพิ่มหัวข้อหลัก..." 
+                    className="bg-transparent border-none focus:ring-0 p-0 text-base w-full placeholder:text-current opacity-70"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        addTask(e.currentTarget.value);
+                        projectTaskAction(currentProject.id, 'add', { text: e.currentTarget.value });
                         e.currentTarget.value = '';
                       }
                     }}
@@ -355,7 +236,7 @@ export default function Home() {
                 style={{ borderColor: 'var(--accent)' }}
                 placeholder="บันทึกรายละเอียด, ไอเดีย, หรือสิ่งที่ต้องจำ..."
                 value={currentProject.description}
-                onChange={(e) => updateCurrentProject({ description: e.target.value })}
+                onChange={(e) => updateProject(currentProject.id, { description: e.target.value })}
               />
               <div className="mt-2 text-xs opacity-40 text-right">
                 Auto-saved to local JSON
