@@ -42,10 +42,10 @@ export default function Home() {
   }, [theme]);
 
   // Handle Actions
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     const name = prompt("ตั้งชื่อโปรเจกต์ใหม่:");
     if (name) {
-      const newId = addProject(name);
+      const newId = await addProject(name);
       setCurrentProjectId(newId);
     }
   };
