@@ -37,7 +37,26 @@ export default function TaskItem({
     if (isBlindEnabled) return null;
   }
   // ------------------------------
+  // Helper: ฟังก์ชันสำหรับย้าย Focus
+  const moveFocus = (currentInput: HTMLInputElement, direction: 'up' | 'down') => {
+    const allInputs = Array.from(document.querySelectorAll('.task-input')) as HTMLInputElement[];
+    const currentIndex = allInputs.indexOf(currentInput);
+    
+    if (currentIndex === -1) return;
 
+    let targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+    if (targetIndex >= 0 && targetIndex < allInputs.length) {
+      const targetInput = allInputs[targetIndex];
+      targetInput.focus();
+      
+      // (Optional) ย้าย Cursor ไปไว้ท้ายสุดเสมอ (เหมือน Notion/VSCode)
+      // ถ้าไม่ต้องการ (อยากให้จำตำแหน่งเดิม) ให้ลบ setTimeout นี้ออก
+      setTimeout(() => {
+        targetInput.setSelectionRange(targetInput.value.length, targetInput.value.length);
+      }, 0);
+    }
+  };
   return (
     <div className="flex flex-col select-none animate-in fade-in duration-300">
       <div 
@@ -77,18 +96,41 @@ export default function TaskItem({
              } 
           `}
           onKeyDown={(e) => {
-             if (e.key === 'Enter') { e.preventDefault(); actions.onAddSibling(task.id); }
-             if (e.key === 'Escape') { 
-                if (task.text.trim() === '') {
-                  e.preventDefault();
-                  const allInputs = Array.from(document.querySelectorAll('.task-input'));
-                  const currentIndex = allInputs.indexOf(e.currentTarget);
-                  if (currentIndex > 0) (allInputs[currentIndex - 1] as HTMLInputElement).focus();
-                  actions.onDelete(task.id);
-                } else {
-                  e.currentTarget.blur();
-                }
-             }
+            const input = e.currentTarget;
+
+             if (e.key === 'Enter') {
+              e.preventDefault();
+              actions.onAddSibling(task.id);
+              
+              // ใช้ setTimeout เพื่อรอให้ React สร้าง DOM ตัวใหม่เสร็จก่อน แล้วค่อยย้าย Focus
+              setTimeout(() => {
+                moveFocus(input, 'down');
+              }, 0);
+            }
+
+            // Arrow Up: ย้ายไปบรรทัดบน
+            if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              moveFocus(input, 'up');
+            }
+
+            // Arrow Down: ย้ายไปบรรทัดล่าง
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              moveFocus(input, 'down');
+            }
+
+            if (e.key === 'Escape') { 
+              if (task.text.trim() === '') {
+                e.preventDefault();
+                const allInputs = Array.from(document.querySelectorAll('.task-input'));
+                const currentIndex = allInputs.indexOf(e.currentTarget);
+                if (currentIndex > 0) (allInputs[currentIndex - 1] as HTMLInputElement).focus();
+                actions.onDelete(task.id);
+              } else {
+                e.currentTarget.blur();
+              }
+            }
           }}
           style={{ 
              color: 'var(--text-primary)',
