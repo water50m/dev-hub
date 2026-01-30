@@ -35,6 +35,74 @@ const addSubtaskInTree = (tasks: Task[], parentId: string, newSubtask: Task): Ta
   });
 };
 
+const addSiblingInTree = (tasks: Task[], refId: string, newTask: Task): Task[] => {
+  // 1. หาในระดับปัจจุบันก่อน
+  const index = tasks.findIndex(t => t.id === refId);
+  if (index !== -1) {
+    // เจอแล้ว! แทรกตัวใหม่ต่อท้าย
+    const newTasks = [...tasks];
+    newTasks.splice(index + 1, 0, newTask);
+    return newTasks;
+  }
+  
+  // 2. ถ้าไม่เจอ ให้วนหาในลูกๆ (Recursive)
+  return tasks.map(t => {
+    if (t.subtasks && t.subtasks.length > 0) {
+      return { ...t, subtasks: addSiblingInTree(t.subtasks, refId, newTask) };
+    }
+    return t;
+  });
+};
+
+// Helper 1: กระจายสถานะลงลูกหลาน (แม่ -> ลูก)
+const setStatusDownstream = (task: Task, status: boolean): Task => {
+  return {
+    ...task,
+    isCompleted: status,
+    subtasks: task.subtasks?.map(s => setStatusDownstream(s, status)) || []
+  };
+};
+
+// Helper 2: ตรวจสอบสถานะย้อนขึ้นบน (ลูก -> แม่)
+// ฟังก์ชันนี้จะ "จัดระเบียบ" (Normalize) ทั้ง Tree ให้สถานะแม่ตรงกับลูกเสมอ
+const normalizeStatusUpstream = (tasks: Task[]): Task[] => {
+  return tasks.map(task => {
+    // 1. Recurse ลงไปจัดการลูกๆ ก่อน (Depth-First)
+    const updatedSubtasks = task.subtasks ? normalizeStatusUpstream(task.subtasks) : [];
+
+    // 2. คำนวณสถานะตัวเองจากลูกๆ
+    let newIsCompleted = task.isCompleted;
+
+    if (updatedSubtasks.length > 0) {
+      // กฎ: แม่จะเสร็จ ก็ต่อเมื่อ "ลูกทุกคนเสร็จ"
+      const allChildrenDone = updatedSubtasks.every(t => t.isCompleted);
+      newIsCompleted = allChildrenDone;
+    }
+
+    return {
+      ...task,
+      subtasks: updatedSubtasks,
+      isCompleted: newIsCompleted
+    };
+  });
+};
+
+// Helper 3: ค้นหาและ Toggle เป้าหมาย (ก่อนจะส่งไป Normalize)
+const toggleTargetAndDescendants = (tasks: Task[], targetId: string): Task[] => {
+  return tasks.map(t => {
+    if (t.id === targetId) {
+      // เจอตัวที่กดแล้ว! สลับสถานะตัวเอง และบังคับลูกน้องเปลี่ยนตาม
+      const newStatus = !t.isCompleted;
+      return setStatusDownstream(t, newStatus);
+    }
+    // ถ้ายังไม่เจอ ให้หาในลูกต่อ
+    if (t.subtasks?.length) {
+      return { ...t, subtasks: toggleTargetAndDescendants(t.subtasks, targetId) };
+    }
+    return t;
+  });
+};
+
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,7 +199,7 @@ export function useProjects() {
     await supabase.from('projects').update({ is_default: true }).eq('id', id);
   };
 
-  const projectTaskAction = (projectId: string, actionType: string, payload: any) => {
+const projectTaskAction = (projectId: string, actionType: string, payload: any) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
 
@@ -140,22 +208,36 @@ export function useProjects() {
 
     switch (actionType) {
       case 'toggle':
-        newTasks = updateTaskInTree(newTasks, payload.id, t => ({ ...t, isCompleted: !t.isCompleted }));
+        // 1. เปลี่ยนสถานะตัวที่กด (และลูกน้อง)
+        newTasks = toggleTargetAndDescendants(newTasks, payload.id);
+        
+        // 2. คำนวณสถานะแม่ๆ ใหม่ทั้งระบบ (Auto-Check Logic)
+        newTasks = normalizeStatusUpstream(newTasks);
         break;
       case 'text':
         newTasks = updateTaskInTree(newTasks, payload.id, t => ({ ...t, text: payload.text }));
         break;
       case 'delete':
         newTasks = deleteTaskInTree(newTasks, payload.id);
+        // ลบเสร็จ ต้อง Normalize ด้วย (เผื่อลบลูกที่ยังไม่เสร็จออกจนหมด แม่ต้องเสร็จตาม)
+        newTasks = normalizeStatusUpstream(newTasks); 
         break;
       case 'addSub':
-        const newSub: Task = { id: crypto.randomUUID(), text: "New Subtask", isCompleted: false, subtasks: [], isExpanded: true };
+        // เพิ่มลูก (Subtask)
+        const newSub = { id: crypto.randomUUID(), text: "", isCompleted: false, subtasks: [], isExpanded: true };
         newTasks = addSubtaskInTree(newTasks, payload.id, newSub);
         break;
       case 'expand':
         newTasks = updateTaskInTree(newTasks, payload.id, t => ({ ...t, isExpanded: !t.isExpanded }));
         break;
-      case 'add':
+      
+      case 'addSibling':
+        const sibling = { id: crypto.randomUUID(), text: "", isCompleted: false, subtasks: [], isExpanded: true };
+        newTasks = addSiblingInTree(newTasks, payload.refId, sibling);
+        // เพิ่มพี่น้อง ไม่กระทบแม่ (เพราะอยู่ระดับเดียวกัน) แต่ Normalize กันเหนียวได้
+        break;
+
+      case 'add': 
         newTasks.push({ id: crypto.randomUUID(), text: payload.text, isCompleted: false, subtasks: [], isExpanded: true });
         break;
     }

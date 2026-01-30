@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Plus, Trash2, RotateCcw, Layout, Moon, Zap, 
-  TreePine, Crown, Settings, X, Pencil 
+import {
+  Plus, Trash2, RotateCcw, Layout, Moon, Zap, Ghost,
+  TreePine, Crown, Settings, X, Pencil, Eye, EyeOff
 } from "lucide-react";
 import { Theme } from "@/lib/types";
 import { useProjects } from "@/hooks/useProjects"; // เรียกใช้ Hook ที่เราทำไว้
@@ -11,15 +11,17 @@ import TaskItem from "@/components/TaskItem";      // เรียกใช้ C
 
 export default function Home() {
   // 1. เรียกใช้ Logic ทั้งหมดจาก Hook (บรรทัดเดียวจบ)
-  const { 
-    projects, isLoading, addProject, updateProject, 
-    deleteProject, restoreProject, setDefault, projectTaskAction 
+  const {
+    projects, isLoading, addProject, updateProject,
+    deleteProject, restoreProject, setDefault, projectTaskAction
   } = useProjects();
-  
+
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>('electric');
   const [showTrash, setShowTrash] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [isBlindEnabled, setIsBlindEnabled] = useState(true); // Default เป็น true (Blind)
 
   // Auto-select Project เมื่อโหลดเสร็จ
   useEffect(() => {
@@ -73,13 +75,13 @@ export default function Home() {
               <Plus size={18} />
             </button>
           </div>
-          
+
           {projects.filter(p => !p.isDeleted).map(p => (
-            <div 
+            <div
               key={p.id}
               onClick={() => setCurrentProjectId(p.id)}
               className={`group flex items-center justify-between p-2 rounded cursor-pointer transition-all ${currentProjectId === p.id ? 'font-bold ring-1 ring-inset' : 'opacity-70 hover:opacity-100'}`}
-              style={{ 
+              style={{
                 backgroundColor: currentProjectId === p.id ? 'var(--bg-primary)' : 'transparent',
                 borderColor: 'var(--accent)',
               }}
@@ -89,14 +91,14 @@ export default function Home() {
                 <span className="truncate">{p.name}</span>
               </div>
               <div className="hidden group-hover:flex gap-1">
-                 <button 
+                <button
                   title="Set Default"
                   onClick={(e) => { e.stopPropagation(); setDefault(p.id); }}
                   className="p-1 hover:text-yellow-500"
                 >
                   <Crown size={12} />
                 </button>
-                <button 
+                <button
                   title="Move to Trash"
                   onClick={(e) => { e.stopPropagation(); deleteProject(p.id); }}
                   className="p-1 hover:text-red-500"
@@ -109,11 +111,11 @@ export default function Home() {
         </div>
 
         {/* Trash Toggle */}
-        <button 
+        <button
           onClick={() => setShowTrash(!showTrash)}
           className="mt-4 flex items-center gap-2 text-sm opacity-60 hover:opacity-100 py-2"
         >
-          <Trash2 size={16} /> 
+          <Trash2 size={16} />
           ถังขยะ ({projects.filter(p => p.isDeleted).length})
         </button>
 
@@ -132,8 +134,8 @@ export default function Home() {
           // Trash View
           <div className="p-8 flex-1 overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2 text-red-500"><Trash2 /> ถังขยะ (Deleted Projects)</h2>
-                <button onClick={() => setShowTrash(false)} className="p-2 hover:bg-black/5 rounded"><X size={24} /></button>
+              <h2 className="text-2xl font-bold flex items-center gap-2 text-red-500"><Trash2 /> ถังขยะ (Deleted Projects)</h2>
+              <button onClick={() => setShowTrash(false)} className="p-2 hover:bg-black/5 rounded"><X size={24} /></button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {projects.filter(p => p.isDeleted).map(p => (
@@ -155,9 +157,9 @@ export default function Home() {
         ) : currentProject ? (
           // Project View
           <div className="flex-1 flex flex-col md:flex-row h-full">
-             {/* Left: Tasks */}
+            {/* Left: Tasks */}
             <div className="flex-1 p-6 md:p-10 overflow-y-auto border-b md:border-b-0 md:border-r" style={{ borderColor: 'var(--border)' }}>
-              
+
               {/* Header (Click to Edit) */}
               <div className="mb-8 group">
                 {isEditingTitle ? (
@@ -174,46 +176,77 @@ export default function Home() {
                     style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
                   />
                 ) : (
-                  <h2 
+                  <h2
                     onClick={() => setIsEditingTitle(true)}
-                    className="text-4xl font-bold mb-2 cursor-pointer flex items-center gap-3 select-none" 
+                    className="text-4xl font-bold mb-2 cursor-pointer flex items-center gap-3 select-none"
                     style={{ color: 'var(--accent)' }}
                     title="คลิกเพื่อแก้ไขชื่อ"
                   >
                     {currentProject.name}
-                    <Pencil 
-                      size={28} 
-                      className="opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity" 
+                    <Pencil
+                      size={28}
+                      className="opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity"
                       style={{ color: 'var(--text-secondary)' }}
                     />
                   </h2>
                 )}
                 <div className="flex items-center gap-2 text-sm opacity-60">
-                   {currentProject.isDefault && <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-bold">DEFAULT</span>}
+                  {currentProject.isDefault && <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-bold">DEFAULT</span>}
                 </div>
+              </div>
+
+              <div className="flex justify-end mb-2 gap-2">
+                {/* --- 1. นี่คือจุดที่ใช้ setIsBlindEnabled ครับ --- */}
+                <button 
+                  onClick={() => setIsBlindEnabled(!isBlindEnabled)} // <--- สลับค่า True/False ตรงนี้
+                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors 
+                    ${!isBlindEnabled ? 'bg-green-100 text-green-700 font-bold' : 'opacity-50 hover:opacity-100 hover:bg-black/5'}`}
+                  title={isBlindEnabled ? "Switch to Clear View" : "Switch to Blind Mode"}
+                >
+                  <Ghost size={14} />
+                  {!isBlindEnabled ? "Clear View" : "Blind Mode"}
+                </button>
+                {/* ------------------------------------------- */}
+
+                <button
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  className="flex items-center gap-1 text-xs opacity-50 hover:opacity-100 transition-opacity px-2 py-1 rounded hover:bg-black/5"
+                >
+                  {showCompleted ? <Eye size={14} /> : <EyeOff size={14} />}
+                  {showCompleted ? "Show Completed" : "Hide Completed"}
+                </button>
               </div>
 
               {/* Task List (ใช้ Component ใหม่) */}
               <div className="space-y-1">
                 {currentProject.tasks.map(task => (
                   <TaskItem 
-                    key={task.id} 
-                    task={task}
-                    // ส่ง Actions เข้าไปผ่าน Hook Wrapper
-                    onToggle={(id) => projectTaskAction(currentProject.id, 'toggle', { id })}
-                    onUpdateText={(id, text) => projectTaskAction(currentProject.id, 'text', { id, text })}
-                    onDelete={(id) => projectTaskAction(currentProject.id, 'delete', { id })}
-                    onAddSubtask={(id) => projectTaskAction(currentProject.id, 'addSub', { id })}
-                    onToggleExpand={(id) => projectTaskAction(currentProject.id, 'expand', { id })}
-                  />
+    key={task.id} 
+    task={task}
+    showCompleted={showCompleted}
+    
+    // --- เติมบรรทัดนี้ครับ ---
+    isBlindEnabled={isBlindEnabled} 
+    // ----------------------
+
+    onToggle={(id) => projectTaskAction(currentProject.id, 'toggle', { id })}
+    onUpdateText={(id, text) => projectTaskAction(currentProject.id, 'text', { id, text })}
+    onDelete={(id) => projectTaskAction(currentProject.id, 'delete', { id })}
+    onAddSubtask={(id) => projectTaskAction(currentProject.id, 'addSub', { id })}
+    onToggleExpand={(id) => projectTaskAction(currentProject.id, 'expand', { id })}
+    onAddSibling={(refId) => projectTaskAction(currentProject.id, 'addSibling', { refId })}
+  />
                 ))}
 
-                {/* New Task Input */}
-                <div className="flex items-center gap-3 mt-6 opacity-60 hover:opacity-100 transition-opacity pl-1">
+                {/* ปุ่มบวกใหญ่ด้านล่าง (สำหรับสร้าง Root Item ใหม่) */}
+                <div className="flex items-center gap-3 mt-6 opacity-60 hover:opacity-100 transition-opacity pl-1 cursor-text"
+                  onClick={() => document.getElementById('new-task-input')?.focus()}
+                >
                   <Plus size={20} />
-                  <input 
-                    type="text" 
-                    placeholder="เพิ่มหัวข้อหลัก..." 
+                  <input
+                    id="new-task-input"
+                    type="text"
+                    placeholder="เพิ่มหัวข้อใหม่..."
                     className="bg-transparent border-none focus:ring-0 p-0 text-base w-full placeholder:text-current opacity-70"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -229,9 +262,9 @@ export default function Home() {
             {/* Right: Documentation */}
             <div className="w-full md:w-1/3 p-6 md:p-10 flex flex-col" style={{ backgroundColor: 'var(--bg-secondary)' }}>
               <h3 className="text-xl font-bold mb-4 opacity-80 flex items-center gap-2">
-                 Documentation / Notes
+                Documentation / Notes
               </h3>
-              <textarea 
+              <textarea
                 className="flex-1 w-full bg-transparent resize-none focus:outline-none leading-relaxed p-4 rounded border border-transparent focus:border-opacity-50 transition-all"
                 style={{ borderColor: 'var(--accent)' }}
                 placeholder="บันทึกรายละเอียด, ไอเดีย, หรือสิ่งที่ต้องจำ..."
